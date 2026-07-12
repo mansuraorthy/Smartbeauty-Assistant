@@ -174,6 +174,13 @@ class BeautyViewModel(application: Application) : AndroidViewModel(application) 
     private val _activeTab = MutableStateFlow("Explore") // "Explore", "Lists", "Stores", "Seller Panel"
     val activeTab: StateFlow<String> = _activeTab.asStateFlow()
 
+    private val _hasSeenEntrance = MutableStateFlow(false)
+    val hasSeenEntrance: StateFlow<Boolean> = _hasSeenEntrance.asStateFlow()
+
+    fun completeEntrance() {
+        _hasSeenEntrance.value = true
+    }
+
     // Filter to only show available/recently claimed products
     private val _onlyShowAvailable = MutableStateFlow(false)
     val onlyShowAvailable: StateFlow<Boolean> = _onlyShowAvailable.asStateFlow()

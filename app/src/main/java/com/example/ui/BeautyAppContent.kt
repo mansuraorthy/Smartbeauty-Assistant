@@ -8,6 +8,8 @@ import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -46,22 +48,30 @@ fun BeautyAppContent(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    val activeTab by viewModel.activeTab.collectAsStateWithLifecycle()
-    val shoppingItems by viewModel.shoppingItems.collectAsStateWithLifecycle()
-    val selectedDistrict by viewModel.selectedDistrict.collectAsStateWithLifecycle()
-    val storeMatches by viewModel.storeMatches.collectAsStateWithLifecycle()
-    val allStores by viewModel.allStores.collectAsStateWithLifecycle()
-    val allProducts by viewModel.allProducts.collectAsStateWithLifecycle()
-    val activeSellerStoreId by viewModel.activeSellerStoreId.collectAsStateWithLifecycle()
+    val hasSeenEntrance by viewModel.hasSeenEntrance.collectAsStateWithLifecycle()
 
-    var productInputText by remember { mutableStateOf("") }
-    val focusManager = LocalFocusManager.current
+    if (!hasSeenEntrance) {
+        HomeEntrancePage(
+            viewModel = viewModel,
+            onProceed = { viewModel.completeEntrance() }
+        )
+    } else {
+        val activeTab by viewModel.activeTab.collectAsStateWithLifecycle()
+        val shoppingItems by viewModel.shoppingItems.collectAsStateWithLifecycle()
+        val selectedDistrict by viewModel.selectedDistrict.collectAsStateWithLifecycle()
+        val storeMatches by viewModel.storeMatches.collectAsStateWithLifecycle()
+        val allStores by viewModel.allStores.collectAsStateWithLifecycle()
+        val allProducts by viewModel.allProducts.collectAsStateWithLifecycle()
+        val activeSellerStoreId by viewModel.activeSellerStoreId.collectAsStateWithLifecycle()
 
-    Scaffold(
-        modifier = modifier
-            .fillMaxSize()
-            .background(RoseBackground),
-        containerColor = RoseBackground,
+        var productInputText by remember { mutableStateOf("") }
+        val focusManager = LocalFocusManager.current
+
+        Scaffold(
+            modifier = modifier
+                .fillMaxSize()
+                .background(RoseBackground),
+            containerColor = RoseBackground,
         topBar = {
             Column(
                 modifier = Modifier
@@ -296,6 +306,7 @@ fun BeautyAppContent(
         }
     }
 }
+}
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -453,15 +464,13 @@ fun ExploreTab(
                         IconButton(
                             onClick = onAddProduct,
                             modifier = Modifier
-                                .size(36.dp)
-                                .background(RosePrimary, CircleShape)
+                                .size(40.dp)
+                                .background(RosePrimary, RoundedCornerShape(12.dp))
                                 .testTag("add_product_button")
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Add,
-                                contentDescription = "Add Item",
+                            BowIcon(
                                 tint = Color.White,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(22.dp)
                             )
                         }
                     }
@@ -3118,6 +3127,310 @@ fun PriceComparisonCard(
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun BowIcon(
+    tint: Color,
+    modifier: Modifier = Modifier
+) {
+    androidx.compose.foundation.Canvas(modifier = modifier.size(24.dp)) {
+        val width = size.width
+        val height = size.height
+        
+        // Knot at the center
+        val knotRadius = width * 0.12f
+        val centerX = width / 2f
+        val centerY = height / 2f - 1f
+        
+        // Let's use a nice stroke width
+        val strokeWidth = 2.dp.toPx()
+        
+        val path = androidx.compose.ui.graphics.Path().apply {
+            // Left Loop
+            moveTo(centerX, centerY)
+            cubicTo(
+                centerX - width * 0.45f, centerY - height * 0.35f, // Control 1
+                centerX - width * 0.45f, centerY + height * 0.05f, // Control 2
+                centerX, centerY // End
+            )
+            // Right Loop
+            cubicTo(
+                centerX + width * 0.45f, centerY - height * 0.35f, // Control 1
+                centerX + width * 0.45f, centerY + height * 0.05f, // Control 2
+                centerX, centerY // End
+            )
+            
+            // Left Tail
+            moveTo(centerX - knotRadius * 0.5f, centerY + knotRadius * 0.5f)
+            cubicTo(
+                centerX - width * 0.2f, centerY + height * 0.2f,
+                centerX - width * 0.3f, centerY + height * 0.3f,
+                centerX - width * 0.25f, centerY + height * 0.45f
+            )
+            
+            // Right Tail
+            moveTo(centerX + knotRadius * 0.5f, centerY + knotRadius * 0.5f)
+            cubicTo(
+                centerX + width * 0.2f, centerY + height * 0.2f,
+                centerX + width * 0.3f, centerY + height * 0.3f,
+                centerX + width * 0.25f, centerY + height * 0.45f
+            )
+        }
+        
+        // Draw the loops and tails with stroke and round cap
+        drawPath(
+            path = path,
+            color = tint,
+            style = androidx.compose.ui.graphics.drawscope.Stroke(
+                width = strokeWidth,
+                cap = androidx.compose.ui.graphics.StrokeCap.Round,
+                join = androidx.compose.ui.graphics.StrokeJoin.Round
+            )
+        )
+        
+        // Draw the center knot circle filled
+        drawCircle(
+            color = tint,
+            radius = knotRadius,
+            center = androidx.compose.ui.geometry.Offset(centerX, centerY)
+        )
+    }
+}
+
+@Composable
+fun HomeEntrancePage(
+    viewModel: BeautyViewModel,
+    onProceed: () -> Unit
+) {
+    val context = LocalContext.current
+    val isFbAuthorized by viewModel.isFbAuthorized.collectAsStateWithLifecycle()
+    val authorizedAccountName by viewModel.authorizedAccountName.collectAsStateWithLifecycle()
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                androidx.compose.ui.graphics.Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFFFFF0F3), // Soft Rose light gradient
+                        RoseBackground
+                    )
+                )
+            )
+            .statusBarsPadding()
+            .navigationBarsPadding()
+            .padding(24.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = 480.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            // App Title / Branding
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = "WELCOME TO",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = RosePrimary,
+                    letterSpacing = 2.sp
+                )
+                Text(
+                    text = "Smart Beauty",
+                    fontSize = 32.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = RoseTextPrimary,
+                    letterSpacing = (-0.5).sp
+                )
+                Text(
+                    text = "Bangladeshi Crowdsourced Cosmetics Finder",
+                    fontSize = 12.sp,
+                    color = RoseTextSecondary,
+                    textAlign = TextAlign.Center
+                )
+            }
+
+            // Elegant Abstract Woman illustration Frame
+            Box(
+                modifier = Modifier
+                    .size(220.dp)
+                    .clip(RoundedCornerShape(32.dp))
+                    .border(2.dp, RoseOutline, RoundedCornerShape(32.dp))
+                    .background(Color.White)
+                    .padding(8.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.img_abstract_woman),
+                    contentDescription = "Abstract Elegant Silhouette",
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(RoundedCornerShape(24.dp)),
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                )
+            }
+
+            // Information Card requesting Permission
+            Card(
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = androidx.compose.foundation.BorderStroke(1.dp, RoseOutline),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(RosePill, CircleShape),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Share,
+                                contentDescription = "FB Connection Icon",
+                                tint = RosePrimary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Text(
+                            text = "Facebook Live Sync Link",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = RoseTextPrimary
+                        )
+                    }
+
+                    Text(
+                        text = "Access active cosmetics store posts and live restock timelines on Facebook. This matches search items in real-time to active Dhaka shops without manual inventory lookups.",
+                        fontSize = 12.sp,
+                        color = RoseTextSecondary,
+                        lineHeight = 18.sp
+                    )
+
+                    HorizontalDivider(color = RoseOutline.copy(alpha = 0.5f))
+
+                    // Features grid
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = "Benefit",
+                                tint = RosePrimary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "Scan timeline for active Restocks & Deals",
+                                fontSize = 11.sp,
+                                color = RoseTextSecondary,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = "Benefit",
+                                tint = RosePrimary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = "Crowdsourced Bangladesh price indexing",
+                                fontSize = 11.sp,
+                                color = RoseTextSecondary,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Actions Block
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Main CTA: Allow & Proceed
+                Button(
+                    onClick = {
+                        viewModel.authorizeFacebook("Meta Guest User")
+                        Toast.makeText(context, "Facebook Connection Authorized!", Toast.LENGTH_SHORT).show()
+                        onProceed()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp)
+                        .testTag("allow_fb_button"),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = RosePrimary,
+                        contentColor = Color.White
+                    ),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Done,
+                            contentDescription = "Allow Icon",
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Allow Facebook Access & Enter",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                // Secondary CTA: Skip Offline
+                OutlinedButton(
+                    onClick = {
+                        onProceed()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp)
+                        .testTag("skip_onboarding_button"),
+                    border = androidx.compose.foundation.BorderStroke(1.5.dp, RoseOutline),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = RosePrimary
+                    ),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Text(
+                        text = "Continue Offline / Skip",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
         }

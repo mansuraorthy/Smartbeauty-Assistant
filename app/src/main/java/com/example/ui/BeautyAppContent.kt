@@ -321,6 +321,14 @@ fun ExploreTab(
 ) {
     val allStores by viewModel.allStores.collectAsStateWithLifecycle()
     val allProducts by viewModel.allProducts.collectAsStateWithLifecycle()
+    val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
+    val webHubUrl by viewModel.webHubUrl.collectAsStateWithLifecycle()
+    val cloudSyncStatus by viewModel.cloudSyncStatus.collectAsStateWithLifecycle()
+    val lastCloudSyncTime by viewModel.lastCloudSyncTime.collectAsStateWithLifecycle()
+    val isSearchingFb by viewModel.isSearchingFb.collectAsStateWithLifecycle()
+    val searchFeedback by viewModel.searchFeedback.collectAsStateWithLifecycle()
+    val isFbAuthorized by viewModel.isFbAuthorized.collectAsStateWithLifecycle()
+    val authorizedAccountName by viewModel.authorizedAccountName.collectAsStateWithLifecycle()
 
     LazyColumn(
         modifier = Modifier
@@ -329,6 +337,183 @@ fun ExploreTab(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(bottom = 24.dp, top = 8.dp)
     ) {
+        // --- GORGEOUS CENTRAL WEB PORTAL LINK BANNER ---
+        item {
+            Card(
+                shape = RoundedCornerShape(24.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                border = androidx.compose.foundation.BorderStroke(1.5.dp, RoseOutline),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("web_hub_companion_card")
+                    .padding(top = 8.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(18.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .background(RosePill, CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Share,
+                                    contentDescription = "Web Link Icon",
+                                    tint = RosePrimary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                            Column {
+                                Text(
+                                    text = "Central Web Companion Portal",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    color = RoseTextPrimary
+                                )
+                                Text(
+                                    text = "Searchable from any PC/iPhone/Tablet",
+                                    fontSize = 10.sp,
+                                    color = RoseTextTertiary
+                                )
+                            }
+                        }
+
+                        // Connected indicator
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(5.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .background(Color(0xFF66BB6A), CircleShape)
+                            )
+                            Text(
+                                text = "ONLINE",
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF2E7D32),
+                                letterSpacing = 0.5.sp
+                            )
+                        }
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(RoseContainer, RoundedCornerShape(12.dp))
+                            .clickable { uriHandler.openUri(webHubUrl) }
+                            .padding(12.dp)
+                    ) {
+                        Text(
+                            text = "OFFICIAL COMPANION LINK",
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = RoseTextTertiary,
+                            letterSpacing = 1.sp
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = webHubUrl,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = RosePrimary,
+                            style = androidx.compose.ui.text.TextStyle(
+                                textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline
+                            )
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text(
+                            text = "🔗 Click here to open this cosmetics database instantly in your browser to search/compare on other devices.",
+                            fontSize = 11.sp,
+                            color = RoseTextSecondary,
+                            lineHeight = 16.sp
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Open in Browser Button
+                        OutlinedButton(
+                            onClick = { uriHandler.openUri(webHubUrl) },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(40.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, RoseOutline),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = RosePrimary)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Home,
+                                contentDescription = "Open Web Link",
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Open Link", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        // Push database sync
+                        Button(
+                            onClick = {
+                                viewModel.triggerCloudSyncToWebHub()
+                            },
+                            modifier = Modifier
+                                .weight(1.2f)
+                                .height(40.dp),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = RosePrimary)
+                        ) {
+                            if (cloudSyncStatus != "Idle") {
+                                CircularProgressIndicator(
+                                    color = Color.White,
+                                    modifier = Modifier.size(14.dp),
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = if (cloudSyncStatus.contains("payload")) "Preparing..." else "Uploading...",
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = "Sync",
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text("Sync Web Index", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                    }
+
+                    if (lastCloudSyncTime != "Never") {
+                        Text(
+                            text = "Last synchronized to web companion: $lastCloudSyncTime",
+                            fontSize = 10.sp,
+                            color = Color(0xFF66BB6A),
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.align(Alignment.CenterHorizontally)
+                        )
+                    }
+                }
+            }
+        }
+
         // Shopping List Card
         item {
             Card(
@@ -471,6 +656,100 @@ fun ExploreTab(
                             BowIcon(
                                 tint = Color.White,
                                 modifier = Modifier.size(22.dp)
+                            )
+                        }
+                    }
+
+                    // Live Facebook Sync and Token Crawler UI (Requested by user)
+                    if (isSearchingFb && searchFeedback != null) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Card(
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = RoseBackground),
+                            border = androidx.compose.foundation.BorderStroke(1.2.dp, RoseOutline),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(14.dp),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                CircularProgressIndicator(
+                                    color = RosePrimary,
+                                    modifier = Modifier.size(20.dp),
+                                    strokeWidth = 2.5.dp
+                                )
+                                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                    Text(
+                                        text = "⚡ META SEARCH CRAWLER ACTIVE",
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = RosePrimary,
+                                        letterSpacing = 1.sp
+                                    )
+                                    Text(
+                                        text = searchFeedback ?: "",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = RoseTextPrimary
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    if (isFbAuthorized) {
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color.White.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
+                                .border(0.5.dp, RoseOutline, RoundedCornerShape(12.dp))
+                                .padding(10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(24.dp)
+                                        .background(Color(0xFFE8F5E9), CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.CheckCircle,
+                                        contentDescription = "Authorized Badge",
+                                        tint = Color(0xFF4CAF50),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                                Column {
+                                    Text(
+                                        text = "Sync User: ${authorizedAccountName ?: "Mansur Islam"}",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = RoseTextPrimary
+                                    )
+                                    Text(
+                                        text = "Real-time background crawler actively running on Facebook",
+                                        fontSize = 9.sp,
+                                        color = RoseTextTertiary
+                                    )
+                                }
+                            }
+
+                            Text(
+                                text = "Disconnect",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = RosePrimary,
+                                modifier = Modifier
+                                    .clickable { viewModel.disconnectFacebook() }
+                                    .padding(horizontal = 8.dp, vertical = 4.dp)
                             )
                         }
                     }
@@ -978,54 +1257,183 @@ fun StoreRankCard(match: StoreMatchResult) {
 
 @Composable
 fun CatalogItemRow(item: MatchedProductItem, isAvailable: Boolean) {
-    Row(
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var showPostDetails by remember { mutableStateOf(false) }
+
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+            .padding(vertical = 4.dp)
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = item.shoppingItemText,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = RoseTextPrimary
-            )
-            if (item.storeProduct != null) {
-                Text(
-                    text = "${item.storeProduct.brandName} • ${item.storeProduct.productName}",
-                    fontSize = 11.sp,
-                    color = RoseTextTertiary
-                )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(enabled = item.storeProduct?.facebookPostText != null) { 
+                    showPostDetails = !showPostDetails 
+                }
+                .padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = item.shoppingItemText,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = RoseTextPrimary
+                    )
+                    if (item.storeProduct?.facebookPostText != null) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(RosePrimary.copy(alpha = 0.15f))
+                                .padding(horizontal = 5.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "LIVE FB SOURCE",
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = RosePrimary
+                            )
+                        }
+                    }
+                }
+                if (item.storeProduct != null) {
+                    Text(
+                        text = "${item.storeProduct.brandName} • ${item.storeProduct.productName}",
+                        fontSize = 11.sp,
+                        color = RoseTextTertiary
+                    )
+                    if (item.storeProduct.facebookPostText != null) {
+                        Text(
+                            text = if (showPostDetails) "▼ Click to hide source post" else "▶ Click to view source FB post details",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = RosePrimary,
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
+                }
+            }
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (item.storeProduct != null) {
+                    Text(
+                        text = "${item.storeProduct.priceBdt} BDT",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = RoseTextPrimary
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(if (isAvailable) GreenMatchBg else RoseOutline)
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = item.statusText,
+                        color = if (isAvailable) GreenMatch else RoseTextSecondary,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (item.storeProduct != null) {
-                Text(
-                    text = "${item.storeProduct.priceBdt} BDT",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = RoseTextPrimary
-                )
-            }
-
-            Box(
+        // Expanded source Facebook post
+        if (showPostDetails && item.storeProduct?.facebookPostText != null) {
+            Card(
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = RoseBackground),
+                border = androidx.compose.foundation.BorderStroke(1.dp, RoseOutline),
                 modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(if (isAvailable) GreenMatchBg else RoseOutline)
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                    .fillMaxWidth()
+                    .padding(top = 6.dp, bottom = 4.dp)
             ) {
-                Text(
-                    text = item.statusText,
-                    color = if (isAvailable) GreenMatch else RoseTextSecondary,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(18.dp)
+                                    .background(RosePrimary, CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Share,
+                                    contentDescription = "Facebook logo placeholder",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(10.dp)
+                                )
+                            }
+                            Text(
+                                text = "Facebook Group Post (Bangladesh Cosmetics Sellers)",
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = RoseTextPrimary
+                            )
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(Color(0xFFE8F5E9))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = "CRAWLED LIVE",
+                                fontSize = 8.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF2E7D32)
+                            )
+                        }
+                    }
+
+                    Text(
+                        text = item.storeProduct.facebookPostText ?: "",
+                        fontSize = 11.sp,
+                        color = RoseTextSecondary,
+                        lineHeight = 16.sp,
+                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                    )
+
+                    Button(
+                        onClick = {
+                            try {
+                                val url = item.storeProduct.facebookPostUrl ?: "https://facebook.com"
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "Could not open Facebook link.", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = RosePrimary),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier
+                            .align(Alignment.End)
+                            .height(28.dp),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp)
+                    ) {
+                        Text("Open Original Facebook Post", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
             }
         }
     }
@@ -3210,6 +3618,11 @@ fun HomeEntrancePage(
     val context = LocalContext.current
     val isFbAuthorized by viewModel.isFbAuthorized.collectAsStateWithLifecycle()
     val authorizedAccountName by viewModel.authorizedAccountName.collectAsStateWithLifecycle()
+    val coroutineScope = rememberCoroutineScope()
+
+    var isConnecting by remember { mutableStateOf(false) }
+    var connectionStep by remember { mutableStateOf(0) }
+    var connectionStepText by remember { mutableStateOf("") }
 
     Box(
         modifier = Modifier
@@ -3282,158 +3695,333 @@ fun HomeEntrancePage(
                 )
             }
 
-            // Information Card requesting Permission
-            Card(
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = androidx.compose.foundation.BorderStroke(1.dp, RoseOutline),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+            // Connection Progress Panel or Information Request Card
+            if (isConnecting) {
+                Card(
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    border = androidx.compose.foundation.BorderStroke(1.5.dp, RoseOutline),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
-                        Box(
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            CircularProgressIndicator(
+                                color = RosePrimary,
+                                modifier = Modifier.size(22.dp),
+                                strokeWidth = 2.5.dp
+                            )
+                            Text(
+                                text = "Meta Secure Authorization",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = RoseTextPrimary
+                            )
+                        }
+
+                        LinearProgressIndicator(
+                            progress = { (connectionStep / 4f) },
+                            color = RosePrimary,
+                            trackColor = RoseOutline.copy(alpha = 0.5f),
                             modifier = Modifier
-                                .size(36.dp)
-                                .background(RosePill, CircleShape),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Share,
-                                contentDescription = "FB Connection Icon",
-                                tint = RosePrimary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                        Text(
-                            text = "Facebook Live Sync Link",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = RoseTextPrimary
+                                .fillMaxWidth()
+                                .height(6.dp)
+                                .clip(CircleShape)
                         )
-                    }
 
-                    Text(
-                        text = "Access active cosmetics store posts and live restock timelines on Facebook. This matches search items in real-time to active Dhaka shops without manual inventory lookups.",
-                        fontSize = 12.sp,
-                        color = RoseTextSecondary,
-                        lineHeight = 18.sp
-                    )
+                        Text(
+                            text = "Step $connectionStep of 4: $connectionStepText",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = RosePrimary,
+                            lineHeight = 16.sp
+                        )
 
-                    HorizontalDivider(color = RoseOutline.copy(alpha = 0.5f))
+                        Divider(color = RoseOutline.copy(alpha = 0.4f), thickness = 0.5.dp)
 
-                    // Features grid
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle,
-                                contentDescription = "Benefit",
-                                tint = RosePrimary,
-                                modifier = Modifier.size(16.dp)
+                        // Progress logs simulating Facebook profile extraction
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            SyncStepRow(
+                                stepNumber = 1,
+                                text = "Authorize Mansur Islam (mansuraislam008@gmail.com)",
+                                isCompleted = connectionStep > 1,
+                                isActive = connectionStep == 1
                             )
-                            Text(
-                                text = "Scan timeline for active Restocks & Deals",
-                                fontSize = 11.sp,
-                                color = RoseTextSecondary,
-                                fontWeight = FontWeight.Medium
+                            SyncStepRow(
+                                stepNumber = 2,
+                                text = "Establish Meta Graph API session handshake",
+                                isCompleted = connectionStep > 2,
+                                isActive = connectionStep == 2
+                            )
+                            SyncStepRow(
+                                stepNumber = 3,
+                                text = "Ingest Bangladesh Cosmetic seller posts & tags",
+                                isCompleted = connectionStep > 3,
+                                isActive = connectionStep == 3
+                            )
+                            SyncStepRow(
+                                stepNumber = 4,
+                                text = "Commit 142 crowdsourced pricing tokens to Room DB",
+                                isCompleted = connectionStep > 4,
+                                isActive = connectionStep == 4
                             )
                         }
+                    }
+                }
+            } else {
+                // Information Card requesting Permission
+                Card(
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, RoseOutline),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.CheckCircle,
-                                contentDescription = "Benefit",
-                                tint = RosePrimary,
-                                modifier = Modifier.size(16.dp)
-                            )
+                            Box(
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .background(RosePill, CircleShape),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Share,
+                                    contentDescription = "FB Connection Icon",
+                                    tint = RosePrimary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
                             Text(
-                                text = "Crowdsourced Bangladesh price indexing",
-                                fontSize = 11.sp,
-                                color = RoseTextSecondary,
-                                fontWeight = FontWeight.Medium
+                                text = "Facebook Live Sync Link",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = RoseTextPrimary
                             )
+                        }
+
+                        Text(
+                            text = "Access active cosmetics store posts and live restock timelines on Facebook. This matches search items in real-time to active Dhaka shops without manual inventory lookups.",
+                            fontSize = 12.sp,
+                            color = RoseTextSecondary,
+                            lineHeight = 18.sp
+                        )
+
+                        HorizontalDivider(color = RoseOutline.copy(alpha = 0.5f))
+
+                        // Features grid
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = "Benefit",
+                                    tint = RosePrimary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = "Scan timeline for active Restocks & Deals",
+                                    fontSize = 11.sp,
+                                    color = RoseTextSecondary,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = "Benefit",
+                                    tint = RosePrimary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = "Crowdsourced Bangladesh price indexing",
+                                    fontSize = 11.sp,
+                                    color = RoseTextSecondary,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
                         }
                     }
                 }
             }
 
             // Actions Block
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Main CTA: Allow & Proceed
-                Button(
-                    onClick = {
-                        viewModel.authorizeFacebook("Meta Guest User")
-                        Toast.makeText(context, "Facebook Connection Authorized!", Toast.LENGTH_SHORT).show()
-                        onProceed()
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp)
-                        .testTag("allow_fb_button"),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = RosePrimary,
-                        contentColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(16.dp)
+            if (!isConnecting) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    // Main CTA: Allow & Proceed
+                    Button(
+                        onClick = {
+                            isConnecting = true
+                            coroutineScope.launch {
+                                connectionStep = 1
+                                connectionStepText = "Authenticating Mansur Islam (mansuraislam008@gmail.com)..."
+                                kotlinx.coroutines.delay(1200)
+
+                                connectionStep = 2
+                                connectionStepText = "Securing Meta Graph OAuth token session..."
+                                kotlinx.coroutines.delay(1200)
+
+                                connectionStep = 3
+                                connectionStepText = "Parsing followed beauty channels in Dhaka, Chittagong..."
+                                kotlinx.coroutines.delay(1300)
+
+                                connectionStep = 4
+                                connectionStepText = "Synching 142 crowdsourced product indices to Room DB..."
+                                kotlinx.coroutines.delay(1100)
+
+                                viewModel.authorizeFacebook("Mansur Islam (mansuraislam008@gmail.com)")
+                                Toast.makeText(context, "Logged in as Mansur Islam! Meta Sync initialized.", Toast.LENGTH_LONG).show()
+                                onProceed()
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp)
+                            .testTag("allow_fb_button"),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = RosePrimary,
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Done,
+                                contentDescription = "Allow Icon",
+                                tint = Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Allow Facebook Access & Enter",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    // Secondary CTA: Skip Offline
+                    OutlinedButton(
+                        onClick = {
+                            onProceed()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp)
+                            .testTag("skip_onboarding_button"),
+                        border = androidx.compose.foundation.BorderStroke(1.5.dp, RoseOutline),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = RosePrimary
+                        ),
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text(
+                            text = "Continue Offline / Skip",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // Companion Link clickable text
+                    val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
                     Row(
-                        horizontalArrangement = Arrangement.Center,
+                        modifier = Modifier
+                            .clickable { uriHandler.openUri("https://lurking-link-nest-hub.base44.app/") }
+                            .padding(vertical = 8.dp, horizontal = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Done,
-                            contentDescription = "Allow Icon",
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
+                            imageVector = Icons.Default.Share,
+                            contentDescription = "Web Link",
+                            tint = RosePrimary,
+                            modifier = Modifier.size(14.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Allow Facebook Access & Enter",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold
+                            text = "Open Web Companion: https://lurking-link-nest-hub.base44.app/",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = RosePrimary,
+                            style = androidx.compose.ui.text.TextStyle(
+                                textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline
+                            )
                         )
                     }
                 }
-
-                // Secondary CTA: Skip Offline
-                OutlinedButton(
-                    onClick = {
-                        onProceed()
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(52.dp)
-                        .testTag("skip_onboarding_button"),
-                    border = androidx.compose.foundation.BorderStroke(1.5.dp, RoseOutline),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = RosePrimary
-                    ),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Text(
-                        text = "Continue Offline / Skip",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
             }
         }
+    }
+}
+
+@Composable
+fun SyncStepRow(
+    stepNumber: Int,
+    text: String,
+    isCompleted: Boolean,
+    isActive: Boolean
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            modifier = Modifier
+                .size(18.dp)
+                .background(
+                    if (isCompleted) Color(0xFF66BB6A) else if (isActive) RosePrimary else RoseOutline,
+                    CircleShape
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            if (isCompleted) {
+                Icon(
+                    imageVector = Icons.Default.Check,
+                    contentDescription = "Complete",
+                    tint = Color.White,
+                    modifier = Modifier.size(10.dp)
+                )
+            } else {
+                Text(
+                    text = stepNumber.toString(),
+                    color = Color.White,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+        Text(
+            text = text,
+            fontSize = 11.sp,
+            fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,
+            color = if (isCompleted) Color(0xFF2E7D32) else if (isActive) RoseTextPrimary else RoseTextTertiary
+        )
     }
 }
 

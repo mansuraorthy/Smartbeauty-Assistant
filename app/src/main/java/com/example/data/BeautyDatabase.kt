@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [RegisteredStore::class, StoreProduct::class, ShoppingItem::class],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class BeautyDatabase : RoomDatabase() {
@@ -23,7 +23,9 @@ abstract class BeautyDatabase : RoomDatabase() {
                     context.applicationContext,
                     BeautyDatabase::class.java,
                     "smart_beauty_db"
-                ).build()
+                )
+                    .fallbackToDestructiveMigration()
+                    .build()
                 INSTANCE = instance
                 instance
             }

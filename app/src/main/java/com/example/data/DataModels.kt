@@ -27,7 +27,9 @@ data class StoreProduct(
     val searchToken: String, // e.g. "boj sunscreen beauty of joseon"
     val availabilityStatus: String, // "Available", "Coming Soon", "Unavailable", "Availability Unknown"
     val restockDays: Int = 0, // days expected to restock if Coming Soon
-    val priceBdt: Int
+    val priceBdt: Int,
+    val facebookPostUrl: String? = null,
+    val facebookPostText: String? = null
 )
 
 @Entity(tableName = "shopping_items")
